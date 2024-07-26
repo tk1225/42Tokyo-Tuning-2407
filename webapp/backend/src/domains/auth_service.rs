@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -35,11 +38,15 @@ pub trait AuthRepository {
 #[derive(Debug)]
 pub struct AuthService<T: AuthRepository + std::fmt::Debug> {
     repository: T,
+    image_cache: Arc<Mutex<HashMap<String, Bytes>>>,
 }
 
 impl<T: AuthRepository + std::fmt::Debug> AuthService<T> {
     pub fn new(repository: T) -> Self {
-        AuthService { repository }
+        AuthService {
+            repository,
+            image_cache: Arc::new(Mutex::new(HashMap::new())),
+        }
     }
 
     pub async fn register_user(
@@ -164,6 +171,14 @@ impl<T: AuthRepository + std::fmt::Debug> AuthService<T> {
             Err(_) => return Err(AppError::NotFound),
         };
 
+        let cache_key = format!("profile_image_{}", profile_image_name);
+        {
+            let cache = self.image_cache.lock().unwrap();
+            if let Some(cached_image) = cache.get(&cache_key) {
+                return Ok(cached_image.clone());
+            }
+        }
+
         let path: PathBuf =
             Path::new(&format!("images/user_profile/{}", profile_image_name)).to_path_buf();
 
@@ -178,16 +193,22 @@ impl<T: AuthRepository + std::fmt::Debug> AuthService<T> {
                 AppError::InternalServerError
             })?;
 
-        match output.status.success() {
-            true => Ok(Bytes::from(output.stdout)),
-            false => {
-                error!(
-                    "画像リサイズのコマンド実行に失敗しました: {:?}",
-                    String::from_utf8_lossy(&output.stderr)
-                );
-                Err(AppError::InternalServerError)
-            }
+        let resized_image = if output.status.success() {
+            Bytes::from(output.stdout)
+        } else {
+            error!(
+                "画像リサイズのコマンド実行に失敗しました: {:?}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+            return Err(AppError::InternalServerError);
+        };
+
+        {
+            let mut cache = self.image_cache.lock().unwrap();
+            cache.insert(cache_key, resized_image.clone());
         }
+
+        Ok(resized_image)
     }
 
     pub async fn validate_session(&self, session_token: &str) -> Result<bool, AppError> {
