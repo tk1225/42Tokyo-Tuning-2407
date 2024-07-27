@@ -77,6 +77,7 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
       - /da/tls:/da/tls:ro
+      - ./nginx/log:/var/log/nginx # ログのボリュームマウントを追加
     networks:
       - webapp-network
     depends_on:
