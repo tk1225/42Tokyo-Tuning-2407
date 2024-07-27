@@ -1,14 +1,14 @@
-use sqlx::FromRow;
-use std::collections::HashMap;
+use std::collections::{BinaryHeap, HashMap};
+use std::cmp::Ordering;
 
-#[derive(FromRow, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct Node {
     pub id: i32,
     pub x: i32,
     pub y: i32,
 }
 
-#[derive(FromRow, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct Edge {
     pub node_a_id: i32,
     pub node_b_id: i32,
@@ -52,25 +52,45 @@ impl Graph {
 
     pub fn shortest_path(&self, from_node_id: i32, to_node_id: i32) -> i32 {
         let mut distances = HashMap::new();
-        distances.insert(from_node_id, 0);
+        let mut heap = BinaryHeap::new();
 
-        for _ in 0..self.nodes.len() {
-            for node_id in self.nodes.keys() {
-                if let Some(edges) = self.edges.get(node_id) {
-                    for edge in edges {
-                        let new_distance = distances
-                            .get(node_id)
-                            .and_then(|d: &i32| d.checked_add(edge.weight))
-                            .unwrap_or(i32::MAX);
-                        let current_distance = distances.get(&edge.node_b_id).unwrap_or(&i32::MAX);
-                        if new_distance < *current_distance {
-                            distances.insert(edge.node_b_id, new_distance);
-                        }
+        distances.insert(from_node_id, 0);
+        heap.push(HeapNode { node_id: from_node_id, distance: 0 });
+
+        while let Some(HeapNode { node_id, distance }) = heap.pop() {
+            if distance > *distances.get(&node_id).unwrap_or(&i32::MAX) {
+                continue;
+            }
+
+            if let Some(edges) = self.edges.get(&node_id) {
+                for edge in edges {
+                    let new_distance = distance.saturating_add(edge.weight);
+                    if new_distance < *distances.get(&edge.node_b_id).unwrap_or(&i32::MAX) {
+                        distances.insert(edge.node_b_id, new_distance);
+                        heap.push(HeapNode { node_id: edge.node_b_id, distance: new_distance });
                     }
                 }
             }
         }
 
         distances.get(&to_node_id).cloned().unwrap_or(i32::MAX)
+    }
+}
+
+#[derive(Eq, PartialEq)]
+struct HeapNode {
+    node_id: i32,
+    distance: i32,
+}
+
+impl Ord for HeapNode {
+    fn cmp(&self, other: &Self) -> Ordering {
+        other.distance.cmp(&self.distance)
+    }
+}
+
+impl PartialOrd for HeapNode {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
     }
 }
