@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-
+use std::io::{Cursor};
 use std::path::{Path, PathBuf};
-use std::process::Command;
-
+// use std::process::Command;
+use image::{DynamicImage, ImageOutputFormat};
 use actix_web::web::Bytes;
 use log::error;
 
@@ -160,6 +160,37 @@ impl<T: AuthRepository + std::fmt::Debug> AuthService<T> {
         Ok(())
     }
 
+    // pub async fn get_resized_profile_image_byte(&self, user_id: i32) -> Result<Bytes, AppError> {
+    //     let profile_image_name = match self
+    //         .repository
+    //         .find_profile_image_name_by_user_id(user_id)
+    //         .await
+    //     {
+    //         Ok(Some(name)) => name,
+    //         Ok(None) => return Err(AppError::NotFound),
+    //         Err(_) => return Err(AppError::NotFound),
+    //     };
+
+    //     let path: PathBuf =
+    //         Path::new(&format!("images/user_profile/{}", profile_image_name)).to_path_buf();
+
+    //     let img = match image::open(&path) {
+    //         Ok(i) => i,
+    //         Err(_) => {
+    //             error!("画像ファイルを開くのに失敗しました");
+    //             return Err(AppError::InternalServerError);
+    //         }
+    //     };
+    //     let resized_img = img.resize(500, 500, image::imageops::FilterType::Lanczos3);
+    //     let mut buf = Vec::new();
+    //     let mut cursor = Cursor::new(&mut buf);
+    //     if let Err(_) = resized_img.write_to(&mut cursor, ImageOutputFormat::Png) {
+    //         error!("リサイズされた画像のエンコードに失敗しました");
+    //         return Err(AppError::InternalServerError);
+    //     }
+    //     Ok(Bytes::from(buf))
+    // }
+
     pub async fn get_resized_profile_image_byte(&self, user_id: i32) -> Result<Bytes, AppError> {
         let profile_image_name = match self
             .repository
@@ -182,33 +213,27 @@ impl<T: AuthRepository + std::fmt::Debug> AuthService<T> {
         let path: PathBuf =
             Path::new(&format!("images/user_profile/{}", profile_image_name)).to_path_buf();
 
-        let output = Command::new("magick")
-            .arg(&path)
-            .arg("-resize")
-            .arg("500x500")
-            .arg("png:-")
-            .output()
-            .map_err(|e| {
-                error!("画像リサイズのコマンド実行に失敗しました: {:?}", e);
-                AppError::InternalServerError
-            })?;
-
-        let resized_image = if output.status.success() {
-            Bytes::from(output.stdout)
-        } else {
-            error!(
-                "画像リサイズのコマンド実行に失敗しました: {:?}",
-                String::from_utf8_lossy(&output.stderr)
-            );
-            return Err(AppError::InternalServerError);
+        let img = match image::open(&path) {
+            Ok(i) => i,
+            Err(_) => {
+                error!("画像ファイルを開くのに失敗しました");
+                return Err(AppError::InternalServerError);
+            }
         };
-
+        let resized_img = img.resize(500, 500, image::imageops::FilterType::Lanczos3);
+        let mut buf = Vec::new();
+        let mut cursor = Cursor::new(&mut buf);
+             if let Err(_) = resized_img.write_to(&mut cursor, ImageOutputFormat::Png) {
+            error!("リサイズされた画像のエンコードに失敗しました");
+            return Err(AppError::InternalServerError);
+        }
+        let resized_image_bytes = Bytes::from(buf);
         {
             let mut cache = self.image_cache.lock().unwrap();
-            cache.insert(cache_key, resized_image.clone());
+            cache.insert(cache_key, resized_image_bytes.clone());
         }
 
-        Ok(resized_image)
+        Ok(resized_image_bytes)
     }
 
     pub async fn validate_session(&self, session_token: &str) -> Result<bool, AppError> {
