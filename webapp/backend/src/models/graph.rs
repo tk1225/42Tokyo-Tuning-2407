@@ -40,7 +40,7 @@ impl Graph {
             node_b_id: edge.node_a_id,
             weight: edge.weight,
         };
-        self.edges.entry(edge.node_b_id).or_default().push(reverse_edge);
+        self.edges.entry(reverse_edge.node_a_id).or_default().push(reverse_edge);
     }
 
     pub fn shortest_path(&self, from_node_id: i32, to_node_id: i32) -> Option<i32> {
@@ -86,9 +86,7 @@ impl Graph {
     fn heuristic(&self, node_id: i32, goal_id: i32) -> i32 {
         let node = self.nodes.get(&node_id).unwrap();
         let goal = self.nodes.get(&goal_id).unwrap();
-        let dx = (node.x - goal.x).abs();
-        let dy = (node.y - goal.y).abs();
-        dx + dy  // マンハッタン距離
+        ((node.x - goal.x).pow(2) + (node.y - goal.y).pow(2)) as f64.sqrt() as i32
     }
 }
 
