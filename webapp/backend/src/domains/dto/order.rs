@@ -1,6 +1,8 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-
+use sqlx::{FromRow};
+use sqlx::mysql::MySqlRow;
+use sqlx::Row;
 use crate::models::order::CompletedOrder;
 
 // Input Data Structure
@@ -67,5 +69,27 @@ impl CompletedOrderDto {
             order_time: entity.order_time,
             completed_time: entity.completed_time,
         }
+    }
+}
+
+impl<'r> FromRow<'r, MySqlRow> for OrderDto {
+    fn from_row(row: &'r MySqlRow) -> Result<Self, sqlx::Error> {
+        Ok(OrderDto {
+            id: row.try_get("id")?,
+            client_id: row.try_get("client_id")?,
+            client_username: row.try_get("client_username")?,
+            dispatcher_id: row.try_get("dispatcher_id")?,
+            dispatcher_user_id: row.try_get("dispatcher_user_id")?,
+            dispatcher_username: row.try_get("dispatcher_username")?,
+            tow_truck_id: row.try_get("tow_truck_id")?,
+            driver_user_id: row.try_get("driver_user_id")?,
+            driver_username: row.try_get("driver_username")?,
+            status: row.try_get("status")?,
+            node_id: row.try_get("node_id")?,
+            area_id: row.try_get("area_id")?,
+            car_value: row.try_get("car_value")?,
+            order_time: row.try_get("order_time")?,
+            completed_time: row.try_get("completed_time")?,
+        })
     }
 }

@@ -1,3 +1,4 @@
+use crate::domains::dto::order::OrderDto;
 use crate::domains::order_service::OrderRepository;
 use crate::errors::AppError;
 use crate::models::order::{CompletedOrder, Order};
@@ -50,7 +51,7 @@ impl OrderRepository for OrderRepositoryImpl {
         sort_order: Option<String>,
         status: Option<String>,
         area: Option<i32>,
-    ) -> Result<Vec<Order>, AppError> {
+    ) -> Result<Vec<OrderDto>, AppError> {
         let offset = page * page_size;
         let order_clause = format!(
             "ORDER BY {} {}",
@@ -76,31 +77,38 @@ impl OrderRepository for OrderRepositoryImpl {
 
         let sql = format!(
             "SELECT 
-                o.id, 
-                o.client_id, 
-                o.dispatcher_id, 
-                o.tow_truck_id, 
-                o.status, 
-                o.node_id, 
-                o.car_value, 
-                o.order_time, 
-                o.completed_time
-            FROM
-                orders o
-            JOIN
-                nodes n
-            ON 
-                o.node_id = n.id
-            {} 
-            {} 
-            LIMIT ? 
-            OFFSET ?",
+            o.id AS id, 
+            o.client_id AS client_id, 
+            c.username AS client_username, 
+            o.dispatcher_id AS dispatcher_id, 
+            d.user_id AS dispatcher_user_id, 
+            u.username AS dispatcher_username, 
+            o.tow_truck_id AS tow_truck_id, 
+            t.driver_id AS driver_user_id, 
+            td.username AS driver_username, 
+            n.area_id AS area_id, 
+            o.status AS status, 
+            o.node_id AS node_id, 
+            o.car_value AS car_value, 
+            o.order_time AS order_time, 
+            o.completed_time AS completed_time
+        FROM orders o
+        LEFT JOIN users c ON o.client_id = c.id
+        LEFT JOIN dispatchers d ON o.dispatcher_id = d.id
+        LEFT JOIN users u ON d.user_id = u.id
+        LEFT JOIN tow_trucks t ON o.tow_truck_id = t.id
+        LEFT JOIN users td ON t.driver_id = td.id
+        JOIN nodes n ON o.node_id = n.id
+        {} 
+        {} 
+        LIMIT ? 
+        OFFSET ?",
             where_clause, order_clause
         );
 
         let orders = match (status, area) {
             (Some(status), Some(area)) => {
-                sqlx::query_as::<_, Order>(&sql)
+                sqlx::query_as::<_, OrderDto>(&sql)
                     .bind(status)
                     .bind(area)
                     .bind(page_size)
@@ -109,7 +117,7 @@ impl OrderRepository for OrderRepositoryImpl {
                     .await?
             }
             (None, Some(area)) => {
-                sqlx::query_as::<_, Order>(&sql)
+                sqlx::query_as::<_, OrderDto>(&sql)
                     .bind(area)
                     .bind(page_size)
                     .bind(offset)
@@ -117,7 +125,7 @@ impl OrderRepository for OrderRepositoryImpl {
                     .await?
             }
             (Some(status), None) => {
-                sqlx::query_as::<_, Order>(&sql)
+                sqlx::query_as::<_, OrderDto>(&sql)
                     .bind(status)
                     .bind(page_size)
                     .bind(offset)
@@ -125,7 +133,7 @@ impl OrderRepository for OrderRepositoryImpl {
                     .await?
             }
             _ => {
-                sqlx::query_as::<_, Order>(&sql)
+                sqlx::query_as::<_, OrderDto>(&sql)
                     .bind(page_size)
                     .bind(offset)
                     .fetch_all(&self.pool)
