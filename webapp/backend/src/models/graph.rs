@@ -58,13 +58,15 @@ impl Graph {
         heap.push(HeapNode { node_id: from_node_id, distance: 0 });
 
         while let Some(HeapNode { node_id, distance }) = heap.pop() {
+            // Skip if this distance is not the shortest known distance
             if distance > *distances.get(&node_id).unwrap_or(&i32::MAX) {
                 continue;
             }
 
             if let Some(edges) = self.edges.get(&node_id) {
                 for edge in edges {
-                    let new_distance = distance.saturating_add(edge.weight);
+                    // Calculate new distance, avoiding overflow
+                    let new_distance = distance.checked_add(edge.weight).unwrap_or(i32::MAX);
                     if new_distance < *distances.get(&edge.node_b_id).unwrap_or(&i32::MAX) {
                         distances.insert(edge.node_b_id, new_distance);
                         heap.push(HeapNode { node_id: edge.node_b_id, distance: new_distance });
@@ -85,6 +87,7 @@ struct HeapNode {
 
 impl Ord for HeapNode {
     fn cmp(&self, other: &Self) -> Ordering {
+        // Min-heap: lower distance should be prioritized
         other.distance.cmp(&self.distance)
     }
 }
