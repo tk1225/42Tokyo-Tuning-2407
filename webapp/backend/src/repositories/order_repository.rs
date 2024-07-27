@@ -2,7 +2,6 @@ use crate::domains::order_service::OrderRepository;
 use crate::errors::AppError;
 use crate::models::order::{CompletedOrder, Order, OrderWithDetails};
 use chrono::{DateTime, Utc};
-use log::error;
 use sqlx::mysql::MySqlPool;
 
 #[derive(Debug)]
@@ -166,53 +165,53 @@ impl OrderRepository for OrderRepositoryImpl {
         let sort_by = sort_by.unwrap_or_else(|| "order_time".to_string());
         let sort_order = sort_order.unwrap_or_else(|| "ASC".to_string());
 
+        let sort_column = match sort_by.as_str() {
+            "completed_time" => "o.completed_time",
+            "order_time" => "o.order_time",
+            _ => "o.id",
+        };
+
         let sql = format!(
             "SELECT
-                o.id AS order_id,
-                o.client_id,
-                c.username AS client_username,
-                o.dispatcher_id,
-                d.user_id AS dispatcher_user_id,
-                u.username AS dispatcher_username,
-                o.tow_truck_id,
-                t.driver_id AS driver_user_id,
-                td.username AS driver_username,
-                m.area_id,
-                o.status,
-                o.car_value,
-                o.order_time,
-                o.completed_time
-            FROM orders o
-            LEFT JOIN users c ON o.client_id = c.id
-            LEFT JOIN dispatchers d ON o.dispatcher_id = d.id
-            LEFT JOIN users u ON d.user_id = u.id
-            LEFT JOIN tow_trucks t ON o.tow_truck_id = t.id
-            LEFT JOIN users td ON t.driver_id = td.id
-            LEFT JOIN map m ON o.node_id = m.node_id
-            WHERE
-                (:status IS NULL OR o.status = :status)
-                AND (:area IS NULL OR m.area_id = :area)
-            ORDER BY
-                CASE
-                    WHEN :sort_by = 'order_time' THEN o.order_time
-                    WHEN :sort_by = 'completed_time' THEN o.completed_time
-                    ELSE o.id
-                END
-                :sort_order
-            LIMIT :page_size OFFSET :offset"
+            o.id AS order_id,
+            o.client_id,
+            c.username AS client_username,
+            o.dispatcher_id,
+            d.user_id AS dispatcher_user_id,
+            u.username AS dispatcher_username,
+            o.tow_truck_id,
+            t.driver_id AS driver_user_id,
+            td.username AS driver_username,
+            m.area_id,
+            o.status,
+            o.node_id,
+            o.car_value,
+            o.order_time,
+            o.completed_time
+        FROM orders o
+        LEFT JOIN users c ON o.client_id = c.id
+        LEFT JOIN dispatchers d ON o.dispatcher_id = d.id
+        LEFT JOIN users u ON d.user_id = u.id
+        LEFT JOIN tow_trucks t ON o.tow_truck_id = t.id
+        LEFT JOIN users td ON t.driver_id = td.id
+        LEFT JOIN nodes m ON o.node_id = m.id
+        WHERE
+            (:status IS NULL OR o.status = :status)
+            AND (:area IS NULL OR m.area_id = :area)
+        ORDER BY {}
+        {} LIMIT :page_size OFFSET :offset",
+            sort_column, sort_order
         );
 
         let orders = sqlx::query_as::<_, OrderWithDetails>(&sql)
             .bind(status)
             .bind(area)
-            .bind(&sort_by)
-            .bind(&sort_order)
             .bind(page_size)
             .bind(offset)
             .fetch_all(&self.pool)
             .await
             .map_err(|e| {
-                error!("Failed to fetch paginated orders with details: {:?}", e);
+                log::error!("Failed to fetch paginated orders with details: {:?}", e);
                 AppError::InternalServerError
             })?;
 
