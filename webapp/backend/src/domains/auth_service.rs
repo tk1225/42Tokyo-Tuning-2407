@@ -1,11 +1,14 @@
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+// use std::collections::HashMap;
+// use std::sync::{Arc, Mutex};
 
-use std::path::{Path, PathBuf};
+use std::path::{Path};
 use std::process::Command;
 
 use actix_web::web::Bytes;
 use log::error;
+
+use tokio::fs::File;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use crate::errors::AppError;
 use crate::models::user::{Dispatcher, Session, User};
@@ -38,14 +41,14 @@ pub trait AuthRepository {
 #[derive(Debug)]
 pub struct AuthService<T: AuthRepository + std::fmt::Debug> {
     repository: T,
-    image_cache: Arc<Mutex<HashMap<String, Bytes>>>,
+    // image_cache: Arc<Mutex<HashMap<String, Bytes>>>,
 }
 
 impl<T: AuthRepository + std::fmt::Debug> AuthService<T> {
     pub fn new(repository: T) -> Self {
         AuthService {
             repository,
-            image_cache: Arc::new(Mutex::new(HashMap::new())),
+            // image_cache: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 
@@ -171,19 +174,32 @@ impl<T: AuthRepository + std::fmt::Debug> AuthService<T> {
             Err(_) => return Err(AppError::NotFound),
         };
 
-        let cache_key = format!("profile_image_{}", profile_image_name);
-        {
-            let cache = self.image_cache.lock().unwrap();
-            if let Some(cached_image) = cache.get(&cache_key) {
-                return Ok(cached_image.clone());
-            }
+        // リサイズ画像のファイルパス
+        let resized_image_path = Path::new("images/user_profile_resized").join(&profile_image_name);
+
+        // ファイルが存在するか確認
+        if resized_image_path.exists() {
+            let mut file = File::open(&resized_image_path).await.map_err(|e| {
+                error!("ファイルのオープンに失敗しました: {:?}", e);
+                AppError::InternalServerError
+            })?;
+
+            let mut buffer = Vec::new();
+            file.read_to_end(&mut buffer).await.map_err(|e| {
+                error!("ファイルの読み込みに失敗しました: {:?}", e);
+                AppError::InternalServerError
+            })?;
+
+            return Ok(Bytes::from(buffer));
         }
 
-        let path: PathBuf =
-            Path::new(&format!("images/user_profile/{}", profile_image_name)).to_path_buf();
+        // 画像のリサイズを実行
+        let image_path = format!("images/user_profile/{}", profile_image_name);
+        let path = Path::new(&image_path);
 
+        // let original_image_path = Path::new(&format!("images/user_profile/{}", profile_image_name));
         let output = Command::new("magick")
-            .arg(&path)
+            .arg(path)
             .arg("-resize")
             .arg("500x500")
             .arg("png:-")
@@ -203,10 +219,20 @@ impl<T: AuthRepository + std::fmt::Debug> AuthService<T> {
             return Err(AppError::InternalServerError);
         };
 
-        {
-            let mut cache = self.image_cache.lock().unwrap();
-            cache.insert(cache_key, resized_image.clone());
+        // リサイズ画像をファイルに保存
+        if let Err(e) = tokio::fs::create_dir_all(resized_image_path.parent().unwrap()).await {
+            error!("ディレクトリの作成に失敗しました: {:?}", e);
+            return Err(AppError::InternalServerError);
         }
+
+        let mut file = File::create(&resized_image_path).await.map_err(|e| {
+            error!("リサイズ画像ファイルの作成に失敗しました: {:?}", e);
+            AppError::InternalServerError
+        })?;
+        file.write_all(&resized_image).await.map_err(|e| {
+            error!("リサイズ画像ファイルの書き込みに失敗しました: {:?}", e);
+            AppError::InternalServerError
+        })?;
 
         Ok(resized_image)
     }
