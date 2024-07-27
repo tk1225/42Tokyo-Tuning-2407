@@ -1,5 +1,5 @@
 use sqlx::FromRow;
-use std::collections::{BinaryHeap, HashMap};
+use std::collections::{BinaryHeap, HashMap, HashSet};
 use std::cmp::Ordering;
 
 #[derive(FromRow, Clone, Debug)]
@@ -30,7 +30,7 @@ struct State {
 
 impl Ord for State {
     fn cmp(&self, other: &Self) -> Ordering {
-        other.cost.cmp(&self.cost)
+        other.cost.cmp(&self.cost) // Min-Heapにするために逆順で比較
     }
 }
 
@@ -76,29 +76,32 @@ impl Graph {
 
         let mut distances = HashMap::new();
         let mut heap = BinaryHeap::new();
+        let mut visited = HashSet::new();
 
         distances.insert(from_node_id, 0);
         heap.push(State { cost: 0, position: from_node_id });
 
         while let Some(State { cost, position }) = heap.pop() {
+            // 目標ノードに到達した場合はコストを返す
             if position == to_node_id {
                 return cost;
             }
 
-            if cost > *distances.get(&position).unwrap_or(&i32::MAX) {
+            // 既に訪問済みのノードはスキップ
+            if visited.contains(&position) {
                 continue;
             }
+            visited.insert(position);
 
             if let Some(edges) = self.edges.get(&position) {
                 for edge in edges {
-                    let next = State {
-                        cost: cost + edge.weight,
-                        position: edge.node_b_id,
-                    };
+                    let next_position = edge.node_b_id;
+                    let next_cost = cost + edge.weight;
 
-                    if next.cost < *distances.get(&next.position).unwrap_or(&i32::MAX) {
-                        heap.push(next.clone()); // Clone `next` here
-                        distances.insert(next.position, next.cost);
+                    // 新しいコストが既存のコストよりも低い場合のみ更新
+                    if next_cost < *distances.get(&next_position).unwrap_or(&i32::MAX) {
+                        distances.insert(next_position, next_cost);
+                        heap.push(State { cost: next_cost, position: next_position });
                     }
                 }
             }
