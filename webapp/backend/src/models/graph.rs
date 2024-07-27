@@ -62,12 +62,12 @@ impl Graph {
         });
 
         while let Some(State { cost, position }) = heap.pop() {
-            if position == to_node_id {
-                return cost;
-            }
-
             if cost > *distances.get(&position).unwrap_or(&i32::MAX) {
                 continue;
+            }
+
+            if position == to_node_id {
+                return cost;
             }
 
             if let Some(edges) = self.edges.get(&position) {
