@@ -15,3 +15,6 @@ CREATE INDEX idx_orders_dispatcher_id ON orders (dispatcher_id);
 CREATE INDEX idx_orders_tow_truck_id ON orders (tow_truck_id);
 CREATE INDEX idx_dispatchers_id ON dispatchers (id);
 CREATE INDEX idx_dispatchers_user_id ON dispatchers (user_id);
+CREATE INDEX idx_orders_area_id ON orders (node_id);
+CREATE INDEX idx_orders_status ON orders(status);
+CREATE INDEX idx_orders_order_time ON orders(order_time);
