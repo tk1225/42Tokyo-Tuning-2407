@@ -78,6 +78,7 @@ impl Graph {
         let mut heap = BinaryHeap::new();
         let mut visited = HashSet::new();
 
+        // 初期化
         distances.insert(from_node_id, 0);
         heap.push(State { cost: 0, position: from_node_id });
 
