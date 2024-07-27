@@ -1,5 +1,6 @@
 -- このファイルに記述されたSQLコマンドが、マイグレーション時に実行されます。
 CREATE INDEX idx_users_username ON users (username);
+CREATE INDEX idx_users_password ON users (password);
 CREATE INDEX idx_tow_trucks_id_driver_id ON tow_trucks (id, driver_id);
 CREATE INDEX idx_locations_tow_truck_id_timestamp ON locations (tow_truck_id, timestamp);
 CREATE INDEX idx_tow_trucks_status_id ON tow_trucks (status, id);
