@@ -1,3 +1,5 @@
+use dashmap::DashMap;
+
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
@@ -38,14 +40,16 @@ pub trait AuthRepository {
 #[derive(Debug)]
 pub struct AuthService<T: AuthRepository + std::fmt::Debug> {
     repository: T,
-    image_cache: Arc<Mutex<HashMap<String, Bytes>>>,
+    // image_cache: Arc<Mutex<HashMap<String, Bytes>>>,
+    image_cache: Arc<DashMap<String, Bytes>>,
 }
 
 impl<T: AuthRepository + std::fmt::Debug> AuthService<T> {
     pub fn new(repository: T) -> Self {
         AuthService {
             repository,
-            image_cache: Arc::new(Mutex::new(HashMap::new())),
+            // image_cache: Arc::new(Mutex::new(HashMap::new())),
+            image_cache: Arc::new(DashMap::new()),
         }
     }
 
@@ -171,12 +175,17 @@ impl<T: AuthRepository + std::fmt::Debug> AuthService<T> {
             Err(_) => return Err(AppError::NotFound),
         };
 
+        // let cache_key = format!("profile_image_{}", profile_image_name);
+        // {
+        //     let cache = self.image_cache.lock().unwrap();
+        //     if let Some(cached_image) = cache.get(&cache_key) {
+        //         return Ok(cached_image.clone());
+        //     }
+        // }
+
         let cache_key = format!("profile_image_{}", profile_image_name);
-        {
-            let cache = self.image_cache.lock().unwrap();
-            if let Some(cached_image) = cache.get(&cache_key) {
-                return Ok(cached_image.clone());
-            }
+        if let Some(cached_image) = self.image_cache.get(&cache_key) {
+            return Ok(cached_image.clone());
         }
 
         let path: PathBuf =
@@ -203,10 +212,11 @@ impl<T: AuthRepository + std::fmt::Debug> AuthService<T> {
             return Err(AppError::InternalServerError);
         };
 
-        {
-            let mut cache = self.image_cache.lock().unwrap();
-            cache.insert(cache_key, resized_image.clone());
-        }
+        // {
+        //     let mut cache = self.image_cache.lock().unwrap();
+        //     cache.insert(cache_key, resized_image.clone());
+        // }
+        self.image_cache.insert(cache_key, resized_image.clone());
 
         Ok(resized_image)
     }
