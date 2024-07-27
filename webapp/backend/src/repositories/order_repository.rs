@@ -1,7 +1,8 @@
 use crate::domains::order_service::OrderRepository;
 use crate::errors::AppError;
-use crate::models::order::{CompletedOrder, Order};
+use crate::models::order::{CompletedOrder, Order, OrderWithDetails};
 use chrono::{DateTime, Utc};
+use log::error;
 use sqlx::mysql::MySqlPool;
 
 #[derive(Debug)]
@@ -150,6 +151,72 @@ impl OrderRepository for OrderRepositoryImpl {
             .await?;
 
         Ok(())
+    }
+
+    async fn get_paginated_orders_with_details(
+        &self,
+        page: i32,
+        page_size: i32,
+        sort_by: Option<String>,
+        sort_order: Option<String>,
+        status: Option<String>,
+        area: Option<i32>,
+    ) -> Result<Vec<OrderWithDetails>, AppError> {
+        let offset = (page - 1) * page_size;
+        let sort_by = sort_by.unwrap_or_else(|| "order_time".to_string());
+        let sort_order = sort_order.unwrap_or_else(|| "ASC".to_string());
+
+        let sql = format!(
+            "SELECT
+                o.id AS order_id,
+                o.client_id,
+                c.username AS client_username,
+                o.dispatcher_id,
+                d.user_id AS dispatcher_user_id,
+                u.username AS dispatcher_username,
+                o.tow_truck_id,
+                t.driver_id AS driver_user_id,
+                td.username AS driver_username,
+                m.area_id,
+                o.status,
+                o.car_value,
+                o.order_time,
+                o.completed_time
+            FROM orders o
+            LEFT JOIN users c ON o.client_id = c.id
+            LEFT JOIN dispatchers d ON o.dispatcher_id = d.id
+            LEFT JOIN users u ON d.user_id = u.id
+            LEFT JOIN tow_trucks t ON o.tow_truck_id = t.id
+            LEFT JOIN users td ON t.driver_id = td.id
+            LEFT JOIN map m ON o.node_id = m.node_id
+            WHERE
+                (:status IS NULL OR o.status = :status)
+                AND (:area IS NULL OR m.area_id = :area)
+            ORDER BY
+                CASE
+                    WHEN :sort_by = 'order_time' THEN o.order_time
+                    WHEN :sort_by = 'completed_time' THEN o.completed_time
+                    ELSE o.id
+                END
+                :sort_order
+            LIMIT :page_size OFFSET :offset"
+        );
+
+        let orders = sqlx::query_as::<_, OrderWithDetails>(&sql)
+            .bind(status)
+            .bind(area)
+            .bind(&sort_by)
+            .bind(&sort_order)
+            .bind(page_size)
+            .bind(offset)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| {
+                error!("Failed to fetch paginated orders with details: {:?}", e);
+                AppError::InternalServerError
+            })?;
+
+        Ok(orders)
     }
 
     async fn update_order_dispatched(

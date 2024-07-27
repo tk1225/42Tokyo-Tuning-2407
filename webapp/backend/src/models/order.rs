@@ -23,3 +23,21 @@ pub struct CompletedOrder {
     pub completed_time: DateTime<Utc>,
     pub car_value: f64,
 }
+
+#[derive(FromRow, Clone, Debug)]
+pub struct OrderWithDetails {
+    pub order_id: i32,
+    pub client_id: i32,
+    pub client_username: Option<String>,
+    pub dispatcher_id: Option<i32>,
+    pub dispatcher_user_id: Option<i32>,
+    pub dispatcher_username: Option<String>,
+    pub tow_truck_id: Option<i32>,
+    pub driver_user_id: Option<i32>,
+    pub driver_username: Option<String>,
+    pub area_id: Option<i32>,
+    pub status: String,
+    pub car_value: f64,
+    pub order_time: DateTime<Utc>,
+    pub completed_time: Option<DateTime<Utc>>,
+}

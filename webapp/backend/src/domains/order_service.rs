@@ -8,7 +8,7 @@ use super::{
 };
 use crate::{
     errors::AppError,
-    models::order::{CompletedOrder, Order},
+    models::order::{CompletedOrder, Order, OrderWithDetails},
 };
 
 pub trait OrderRepository {
@@ -42,6 +42,15 @@ pub trait OrderRepository {
         completed_time: DateTime<Utc>,
     ) -> Result<(), AppError>;
     async fn get_all_completed_orders(&self) -> Result<Vec<CompletedOrder>, AppError>;
+    async fn get_paginated_orders_with_details(
+        &self,
+        page: i32,
+        page_size: i32,
+        sort_by: Option<String>,
+        sort_order: Option<String>,
+        status: Option<String>,
+        area: Option<i32>,
+    ) -> Result<Vec<OrderWithDetails>, AppError>;
 }
 
 #[derive(Debug)]
