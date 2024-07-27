@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use std::io::{Cursor};
 use std::path::{Path, PathBuf};
 // use std::process::Command;
-use image::{DynamicImage, ImageOutputFormat};
+use image::{ImageOutputFormat};
 use actix_web::web::Bytes;
 use log::error;
 
