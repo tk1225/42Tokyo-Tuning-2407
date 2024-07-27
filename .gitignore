@@ -2,5 +2,5 @@
 *.zip
 **/node_modules
 app-gorilla.pem
-access.log
-error.log
+nginx/log/access.log
+nginx/log/error.log
