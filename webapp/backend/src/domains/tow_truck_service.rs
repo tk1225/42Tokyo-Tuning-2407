@@ -4,6 +4,8 @@ use super::order_service::OrderRepository;
 use crate::errors::AppError;
 use crate::models::graph::Graph;
 use crate::models::tow_truck::TowTruck;
+use tokio::task;
+use futures::future::join_all;
 
 pub trait TowTruckRepository {
     async fn get_paginated_tow_trucks(

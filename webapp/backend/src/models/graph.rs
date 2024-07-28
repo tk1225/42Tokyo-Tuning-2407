@@ -1,5 +1,5 @@
 use sqlx::FromRow;
-use std::collections::{HashMap, BinaryHeap};
+use std::collections::{HashMap, BinaryHeap, BTreeMap};
 use std::cmp::Ordering;
 
 #[derive(FromRow, Clone, Debug)]
@@ -45,14 +45,28 @@ impl Graph {
         self.edges.entry(reverse_edge.node_a_id).or_default().push(reverse_edge);
     }
 
+    fn heuristic(&self, node_a_id: i32, node_b_id: i32) -> i32 {
+        let node_a = self.nodes.get(&node_a_id).unwrap();
+        let node_b = self.nodes.get(&node_b_id).unwrap();
+        (node_a.x - node_b.x).abs() + (node_a.y - node_b.y).abs()
+    }
+
     pub fn shortest_path(&self, from_node_id: i32, to_node_id: i32) -> i32 {
-        let mut distances = HashMap::new();
-        let mut heap = BinaryHeap::new();
+        let mut distances: BTreeMap<i32, i32> = BTreeMap::new();
+        let mut heap: BinaryHeap<State> = BinaryHeap::new();
 
         distances.insert(from_node_id, 0);
-        heap.push(State { cost: 0, position: from_node_id });
+        heap.push(State {
+            cost: 0,
+            position: from_node_id,
+            estimated_cost: self.heuristic(from_node_id, to_node_id),
+        });
 
-        while let Some(State { cost, position }) = heap.pop() {
+        while let Some(State {
+            cost,
+            position,
+            ..
+        }) = heap.pop() {
             if position == to_node_id {
                 return cost;
             }
@@ -69,6 +83,7 @@ impl Graph {
                         heap.push(State {
                             cost: next_cost,
                             position: edge.node_b_id,
+                            estimated_cost: next_cost + self.heuristic(edge.node_b_id, to_node_id),
                         });
                     }
                 }
@@ -83,11 +98,12 @@ impl Graph {
 struct State {
     cost: i32,
     position: i32,
+    estimated_cost: i32,
 }
 
 impl Ord for State {
     fn cmp(&self, other: &Self) -> Ordering {
-        other.cost.cmp(&self.cost)
+        other.estimated_cost.cmp(&self.estimated_cost) // 逆順にすることで最小ヒープとして扱う
     }
 }
 
