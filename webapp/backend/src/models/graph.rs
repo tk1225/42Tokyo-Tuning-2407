@@ -1,5 +1,6 @@
 use sqlx::FromRow;
-use std::collections::HashMap;
+use std::collections::{HashMap, BinaryHeap};
+use std::cmp::Ordering;
 
 #[derive(FromRow, Clone, Debug)]
 pub struct Node {
@@ -34,43 +35,64 @@ impl Graph {
     }
 
     pub fn add_edge(&mut self, edge: Edge) {
-        self.edges
-            .entry(edge.node_a_id)
-            .or_default()
-            .push(edge.clone());
+        self.edges.entry(edge.node_a_id).or_default().push(edge.clone());
 
         let reverse_edge = Edge {
             node_a_id: edge.node_b_id,
             node_b_id: edge.node_a_id,
             weight: edge.weight,
         };
-        self.edges
-            .entry(reverse_edge.node_a_id)
-            .or_default()
-            .push(reverse_edge);
+        self.edges.entry(reverse_edge.node_a_id).or_default().push(reverse_edge);
     }
 
     pub fn shortest_path(&self, from_node_id: i32, to_node_id: i32) -> i32 {
         let mut distances = HashMap::new();
-        distances.insert(from_node_id, 0);
+        let mut heap = BinaryHeap::new();
 
-        for _ in 0..self.nodes.len() {
-            for node_id in self.nodes.keys() {
-                if let Some(edges) = self.edges.get(node_id) {
-                    for edge in edges {
-                        let new_distance = distances
-                            .get(node_id)
-                            .and_then(|d: &i32| d.checked_add(edge.weight))
-                            .unwrap_or(i32::MAX);
-                        let current_distance = distances.get(&edge.node_b_id).unwrap_or(&i32::MAX);
-                        if new_distance < *current_distance {
-                            distances.insert(edge.node_b_id, new_distance);
-                        }
+        distances.insert(from_node_id, 0);
+        heap.push(State { cost: 0, position: from_node_id });
+
+        while let Some(State { cost, position }) = heap.pop() {
+            if position == to_node_id {
+                return cost;
+            }
+
+            if cost > *distances.get(&position).unwrap_or(&i32::MAX) {
+                continue;
+            }
+
+            if let Some(edges) = self.edges.get(&position) {
+                for edge in edges {
+                    let next_cost = cost + edge.weight;
+                    if next_cost < *distances.get(&edge.node_b_id).unwrap_or(&i32::MAX) {
+                        distances.insert(edge.node_b_id, next_cost);
+                        heap.push(State {
+                            cost: next_cost,
+                            position: edge.node_b_id,
+                        });
                     }
                 }
             }
         }
 
-        distances.get(&to_node_id).cloned().unwrap_or(i32::MAX)
+        i32::MAX // 経路が見つからなかった場合
+    }
+}
+
+#[derive(Copy, Clone, Eq, PartialEq)]
+struct State {
+    cost: i32,
+    position: i32,
+}
+
+impl Ord for State {
+    fn cmp(&self, other: &Self) -> Ordering {
+        other.cost.cmp(&self.cost)
+    }
+}
+
+impl PartialOrd for State {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
     }
 }
