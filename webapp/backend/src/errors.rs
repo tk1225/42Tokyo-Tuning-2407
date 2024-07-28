@@ -32,8 +32,11 @@ impl ResponseError for AppError {
         let error_message = self.to_string();
         // エラーレスポンス構造体を作成
         let error_response = ErrorResponse {
-            message: error_message,
+            message: error_message.clone(),
         };
+
+        // エラーメッセージをログに出力
+        println!("Error occurred: {}", error_message);
 
         // エラーの種類に応じたHTTPレスポンスを生成
         match *self {

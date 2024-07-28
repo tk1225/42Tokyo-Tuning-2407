@@ -69,6 +69,9 @@ pub async fn get_paginated_orders_handler(
     >, // 注文サービスのインスタンスを依存性として受け取る
     query: web::Query<PaginatedOrderQuery>, // クエリパラメータを受け取る
 ) -> Result<HttpResponse, AppError> { // 戻り値はHttpResponseかAppError
+    // クエリパラメータをログに出力
+    println!("Received query params: {:?}", query);
+
     match service
         .get_paginated_orders(
             query.page.unwrap_or(0),
@@ -81,7 +84,11 @@ pub async fn get_paginated_orders_handler(
         .await
     {
         Ok(orders) => Ok(HttpResponse::Ok().json(orders)), // 成功したら200 OKと注文リストを返す
-        Err(err) => Err(err), // 失敗したらエラーを返す
+        Err(err) => {
+            // エラーをログに出力
+            println!("Error occurred: {:?}", err);
+            Err(err) // 失敗したらエラーを返す
+        },
     }
 }
 
