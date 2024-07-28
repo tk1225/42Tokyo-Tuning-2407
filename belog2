@@ -1,0 +1,47 @@
+[Running 'cargo run']
+Error occurred: Unauthorized
+Error occurred: Bad Request
+Error occurred: Unauthorized
+Error occurred: Unauthorized
+Error occurred: Unauthorized
+Error occurred: Not Found
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: None, sort_order: None, status: None, area: None })
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: Some(20), sort_by: None, sort_order: None, status: None, area: None })
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: Some("car_value"), sort_order: Some("asc"), status: None, area: None })
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: None, sort_order: None, status: None, area: Some(1) })
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: None, sort_order: None, status: Some("pending"), area: None })
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: Some(1), sort_by: Some("order_time"), sort_order: Some("desc"), status: None, area: None })
+Error occurred: Bad Request
+Error occurred: Bad Request
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: None, sort_order: None, status: Some("pending"), area: Some(1) })
+Error occurred: Bad Request
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: None, sort_order: None, status: Some("pending"), area: Some(1) })
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: Some("order_time"), sort_order: Some("asc"), status: Some("pending"), area: Some(2) })
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: Some("order_time"), sort_order: Some("asc"), status: Some("pending"), area: Some(2) })
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: Some("order_time"), sort_order: Some("asc"), status: Some("pending"), area: Some(3) })
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: Some("order_time"), sort_order: Some("asc"), status: Some("pending"), area: Some(3) })
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: Some("order_time"), sort_order: Some("asc"), status: Some("pending"), area: Some(2) })
+Error occurred: Bad Request
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: Some("order_time"), sort_order: Some("asc"), status: Some("pending"), area: Some(3) })
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: Some("order_time"), sort_order: Some("asc"), status: Some("pending"), area: Some(2) })
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: Some("order_time"), sort_order: Some("asc"), status: Some("pending"), area: Some(4) })
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: Some("order_time"), sort_order: Some("asc"), status: Some("pending"), area: Some(4) })
+Error occurred: Bad Request
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: Some("order_time"), sort_order: Some("asc"), status: Some("pending"), area: Some(3) })
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: Some("order_time"), sort_order: Some("asc"), status: Some("pending"), area: Some(4) })
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: Some("order_time"), sort_order: Some("asc"), status: Some("pending"), area: Some(5) })
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: Some("order_time"), sort_order: Some("asc"), status: Some("pending"), area: Some(5) })
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: Some("order_time"), sort_order: Some("asc"), status: Some("pending"), area: Some(3) })
+Error occurred: Bad Request
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: Some("order_time"), sort_order: Some("asc"), status: Some("pending"), area: Some(4) })
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: Some("order_time"), sort_order: Some("asc"), status: Some("pending"), area: Some(5) })
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: Some("order_time"), sort_order: Some("asc"), status: Some("pending"), area: Some(6) })
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: Some("order_time"), sort_order: Some("asc"), status: Some("pending"), area: Some(6) })
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: Some("order_time"), sort_order: Some("asc"), status: Some("pending"), area: Some(4) })
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: Some("order_time"), sort_order: Some("asc"), status: Some("pending"), area: Some(7) })
+Error occurred: Bad Request
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: Some("order_time"), sort_order: Some("asc"), status: Some("pending"), area: Some(5) })
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: Some("order_time"), sort_order: Some("asc"), status: Some("pending"), area: Some(7) })
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: Some("order_time"), sort_order: Some("asc"), status: Some("pending"), area: Some(6) })
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: Some("order_time"), sort_order: Some("asc"), status: Some("pending"), area: Some(7) })
+Received query params: Query(PaginatedOrderQuery { page: None, page_size: None, sort_by: Some("order_time"), sort_order: Some("asc"), status: Some("pending"), area: Some(7) })
