@@ -35,20 +35,14 @@ impl Graph {
     }
 
     pub fn add_edge(&mut self, edge: Edge) {
-        self.edges
-            .entry(edge.node_a_id)
-            .or_default()
-            .push(edge.clone());
+        self.edges.entry(edge.node_a_id).or_default().push(edge.clone());
 
         let reverse_edge = Edge {
             node_a_id: edge.node_b_id,
             node_b_id: edge.node_a_id,
             weight: edge.weight,
         };
-        self.edges
-            .entry(reverse_edge.node_a_id)
-            .or_default()
-            .push(reverse_edge);
+        self.edges.entry(reverse_edge.node_a_id).or_default().push(reverse_edge);
     }
 
     pub fn shortest_path(&self, from_node_id: i32, to_node_id: i32) -> i32 {
@@ -56,30 +50,26 @@ impl Graph {
         let mut heap = BinaryHeap::new();
 
         distances.insert(from_node_id, 0);
-        heap.push(State {
-            cost: 0,
-            position: from_node_id,
-        });
+        heap.push(State { cost: 0, position: from_node_id });
 
         while let Some(State { cost, position }) = heap.pop() {
-            if cost > *distances.get(&position).unwrap_or(&i32::MAX) {
-                continue;
-            }
-
             if position == to_node_id {
                 return cost;
             }
 
+            if cost > *distances.get(&position).unwrap_or(&i32::MAX) {
+                continue;
+            }
+
             if let Some(edges) = self.edges.get(&position) {
                 for edge in edges {
-                    let next = State {
-                        cost: cost + edge.weight,
-                        position: edge.node_b_id,
-                    };
-
-                    if next.cost < *distances.get(&next.position).unwrap_or(&i32::MAX) {
-                        heap.push(next);
-                        distances.insert(next.position, next.cost);
+                    let next_cost = cost + edge.weight;
+                    if next_cost < *distances.get(&edge.node_b_id).unwrap_or(&i32::MAX) {
+                        distances.insert(edge.node_b_id, next_cost);
+                        heap.push(State {
+                            cost: next_cost,
+                            position: edge.node_b_id,
+                        });
                     }
                 }
             }
@@ -98,7 +88,6 @@ struct State {
 impl Ord for State {
     fn cmp(&self, other: &Self) -> Ordering {
         other.cost.cmp(&self.cost)
-            .then_with(|| self.position.cmp(&other.position))
     }
 }
 
