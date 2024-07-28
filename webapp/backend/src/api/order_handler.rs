@@ -86,7 +86,7 @@ pub async fn get_paginated_orders_handler(
         Ok(orders) => Ok(HttpResponse::Ok().json(orders)), // 成功したら200 OKと注文リストを返す
         Err(err) => {
             // エラーをログに出力
-            println!("Error occurred: {:?}", err);
+            println!("Error occurred: {:?}, query params: {:?}", err, query);
             Err(err) // 失敗したらエラーを返す
         },
     }
