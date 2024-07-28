@@ -1,15 +1,16 @@
 use crate::domains::dto::order::{
     ClientOrderRequestDto, DispatcherOrderRequestDto, UpdateOrderStatusRequestDto,
-};
-use crate::domains::order_service::OrderService;
-use crate::errors::AppError;
-use crate::repositories::auth_repository::AuthRepositoryImpl;
-use crate::repositories::map_repository::MapRepositoryImpl;
-use crate::repositories::order_repository::OrderRepositoryImpl;
-use crate::repositories::tow_truck_repository::TowTruckRepositoryImpl;
-use actix_web::{web, HttpResponse};
-use serde::Deserialize;
+}; // 各種注文リクエスト用のデータ転送オブジェクト（DTO）をインポート
+use crate::domains::order_service::OrderService; // OrderServiceをインポート
+use crate::errors::AppError; // アプリケーション固有のエラー型をインポート
+use crate::repositories::auth_repository::AuthRepositoryImpl; // 認証リポジトリの実装をインポート
+use crate::repositories::map_repository::MapRepositoryImpl; // 地図リポジトリの実装をインポート
+use crate::repositories::order_repository::OrderRepositoryImpl; // 注文リポジトリの実装をインポート
+use crate::repositories::tow_truck_repository::TowTruckRepositoryImpl; // レッカー車リポジトリの実装をインポート
+use actix_web::{web, HttpResponse}; // Actix-webのwebモジュールとHttpResponseをインポート
+use serde::Deserialize; // シリアライズ/デシリアライズをサポートするためのSerdeクレートをインポート
 
+// 注文のステータスを更新するハンドラー
 pub async fn update_order_status_handler(
     service: web::Data<
         OrderService<
@@ -18,15 +19,16 @@ pub async fn update_order_status_handler(
             AuthRepositoryImpl,
             MapRepositoryImpl,
         >,
-    >,
-    req: web::Json<UpdateOrderStatusRequestDto>,
-) -> Result<HttpResponse, AppError> {
-    match service.update_order_status(req.order_id, &req.status).await {
-        Ok(_) => Ok(HttpResponse::Ok().finish()),
-        Err(err) => Err(err),
+    >, // 注文サービスのインスタンスを依存性として受け取る
+    req: web::Json<UpdateOrderStatusRequestDto>, // JSONリクエストボディとして受け取る
+) -> Result<HttpResponse, AppError> { // 戻り値はHttpResponseかAppError
+    match service.update_order_status(req.order_id, &req.status).await { // サービスを使って注文ステータスを更新
+        Ok(_) => Ok(HttpResponse::Ok().finish()), // 成功したら200 OKを返す
+        Err(err) => Err(err), // 失敗したらエラーを返す
     }
 }
 
+// 注文を取得するハンドラー
 pub async fn get_order_handler(
     service: web::Data<
         OrderService<
@@ -35,15 +37,16 @@ pub async fn get_order_handler(
             AuthRepositoryImpl,
             MapRepositoryImpl,
         >,
-    >,
-    path: web::Path<i32>,
-) -> Result<HttpResponse, AppError> {
-    match service.get_order_by_id(path.into_inner()).await {
-        Ok(order) => Ok(HttpResponse::Ok().json(order)),
-        Err(err) => Err(err),
+    >, // 注文サービスのインスタンスを依存性として受け取る
+    path: web::Path<i32>, // URLパスパラメータを受け取る
+) -> Result<HttpResponse, AppError> { // 戻り値はHttpResponseかAppError
+    match service.get_order_by_id(path.into_inner()).await { // サービスを使って注文をIDで取得
+        Ok(order) => Ok(HttpResponse::Ok().json(order)), // 成功したら200 OKと注文データを返す
+        Err(err) => Err(err), // 失敗したらエラーを返す
     }
 }
 
+// ページネーションされた注文リストを取得するためのクエリパラメータを定義
 #[derive(Deserialize, Debug)]
 pub struct PaginatedOrderQuery {
     page: Option<i32>,
@@ -54,6 +57,7 @@ pub struct PaginatedOrderQuery {
     area: Option<i32>,
 }
 
+// ページネーションされた注文リストを取得するハンドラー
 pub async fn get_paginated_orders_handler(
     service: web::Data<
         OrderService<
@@ -62,9 +66,9 @@ pub async fn get_paginated_orders_handler(
             AuthRepositoryImpl,
             MapRepositoryImpl,
         >,
-    >,
-    query: web::Query<PaginatedOrderQuery>,
-) -> Result<HttpResponse, AppError> {
+    >, // 注文サービスのインスタンスを依存性として受け取る
+    query: web::Query<PaginatedOrderQuery>, // クエリパラメータを受け取る
+) -> Result<HttpResponse, AppError> { // 戻り値はHttpResponseかAppError
     match service
         .get_paginated_orders(
             query.page.unwrap_or(0),
@@ -76,11 +80,12 @@ pub async fn get_paginated_orders_handler(
         )
         .await
     {
-        Ok(orders) => Ok(HttpResponse::Ok().json(orders)),
-        Err(err) => Err(err),
+        Ok(orders) => Ok(HttpResponse::Ok().json(orders)), // 成功したら200 OKと注文リストを返す
+        Err(err) => Err(err), // 失敗したらエラーを返す
     }
 }
 
+// クライアントからの注文を作成するハンドラー
 pub async fn create_client_order_handler(
     service: web::Data<
         OrderService<
@@ -89,18 +94,19 @@ pub async fn create_client_order_handler(
             AuthRepositoryImpl,
             MapRepositoryImpl,
         >,
-    >,
-    req: web::Json<ClientOrderRequestDto>,
-) -> Result<HttpResponse, AppError> {
+    >, // 注文サービスのインスタンスを依存性として受け取る
+    req: web::Json<ClientOrderRequestDto>, // JSONリクエストボディとして受け取る
+) -> Result<HttpResponse, AppError> { // 戻り値はHttpResponseかAppError
     match service
         .create_client_order(req.client_id, req.node_id, req.car_value)
         .await
     {
-        Ok(_) => Ok(HttpResponse::Created().finish()),
-        Err(err) => Err(err),
+        Ok(_) => Ok(HttpResponse::Created().finish()), // 成功したら201 Createdを返す
+        Err(err) => Err(err), // 失敗したらエラーを返す
     }
 }
 
+// ディスパッチャーからの注文を作成するハンドラー
 pub async fn create_dispatcher_order_handler(
     service: web::Data<
         OrderService<
@@ -109,9 +115,9 @@ pub async fn create_dispatcher_order_handler(
             AuthRepositoryImpl,
             MapRepositoryImpl,
         >,
-    >,
-    req: web::Json<DispatcherOrderRequestDto>,
-) -> Result<HttpResponse, AppError> {
+    >, // 注文サービスのインスタンスを依存性として受け取る
+    req: web::Json<DispatcherOrderRequestDto>, // JSONリクエストボディとして受け取る
+) -> Result<HttpResponse, AppError> { // 戻り値はHttpResponseかAppError
     match service
         .create_dispatcher_order(
             req.order_id,
@@ -121,7 +127,7 @@ pub async fn create_dispatcher_order_handler(
         )
         .await
     {
-        Ok(_) => Ok(HttpResponse::Ok().finish()),
-        Err(err) => Err(err),
+        Ok(_) => Ok(HttpResponse::Ok().finish()), // 成功したら200 OKを返す
+        Err(err) => Err(err), // 失敗したらエラーを返す
     }
 }
