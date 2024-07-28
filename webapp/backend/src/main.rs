@@ -27,13 +27,17 @@ mod utils;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    // データベース接続プールを作成
     let pool = infrastructure::db::create_pool().await;
+    // デフォルトポートを設定
     let mut port = 8080;
 
+    // デバッグモードの場合、ポート番号を変更
     if cfg!(debug_assertions) {
         port = 18080;
     }
 
+    // 各サービスのインスタンスを作成
     let auth_service = web::Data::new(AuthService::new(AuthRepositoryImpl::new(pool.clone())));
     let auth_service_for_middleware =
         Arc::new(AuthService::new(AuthRepositoryImpl::new(pool.clone())));
@@ -50,7 +54,9 @@ async fn main() -> std::io::Result<()> {
     ));
     let map_service = web::Data::new(MapService::new(MapRepositoryImpl::new(pool.clone())));
 
+    // HTTPサーバを設定
     HttpServer::new(move || {
+        // CORS設定を作成
         let mut cors = Cors::default();
 
         cors = cors
@@ -63,12 +69,13 @@ async fn main() -> std::io::Result<()> {
             .supports_credentials()
             .max_age(3600);
 
+        // アプリケーションを作成
         App::new()
             .app_data(tow_truck_service.clone())
             .app_data(auth_service.clone())
             .app_data(order_service.clone())
             .app_data(map_service.clone())
-            .wrap(cors)
+            .wrap(cors)  // CORSミドルウェアを追加
             .service(
                 web::scope("/api")
                     .service(
@@ -96,7 +103,7 @@ async fn main() -> std::io::Result<()> {
                     )
                     .service(
                         web::scope("/tow_truck")
-                            .wrap(AuthMiddleware::new(auth_service_for_middleware.clone()))
+                            .wrap(AuthMiddleware::new(auth_service_for_middleware.clone()))  // 認証ミドルウェアを追加
                             .service(web::resource("/list").route(
                                 web::get().to(tow_truck_handler::get_paginated_tow_trucks_handler),
                             ))
@@ -117,7 +124,7 @@ async fn main() -> std::io::Result<()> {
                     )
                     .service(
                         web::scope("/order")
-                            .wrap(AuthMiddleware::new(auth_service_for_middleware.clone()))
+                            .wrap(AuthMiddleware::new(auth_service_for_middleware.clone()))  // 認証ミドルウェアを追加
                             .service(
                                 web::resource("/list").route(
                                     web::get().to(order_handler::get_paginated_orders_handler),
@@ -143,7 +150,7 @@ async fn main() -> std::io::Result<()> {
                     )
                     .service(
                         web::scope("/map")
-                            .wrap(AuthMiddleware::new(auth_service_for_middleware.clone()))
+                            .wrap(AuthMiddleware::new(auth_service_for_middleware.clone()))  // 認証ミドルウェアを追加
                             .service(
                                 web::resource("/update_edge")
                                     .route(web::put().to(map_handler::update_edge_handler)),
@@ -151,8 +158,8 @@ async fn main() -> std::io::Result<()> {
                     ),
             )
     })
-    .bind(format!("0.0.0.0:{port}"))?
-    .workers(4)
-    .run()
+    .bind(format!("0.0.0.0:{port}"))?  // サーバを指定のポートにバインド
+    .workers(4)  // ワーカースレッド数を指定
+    .run()  // サーバを起動
     .await
 }

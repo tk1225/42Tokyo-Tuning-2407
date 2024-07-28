@@ -55,6 +55,7 @@ services:
       - ./mysql/init:/docker-entrypoint-initdb.d
       - ./mysql/conf.d:/etc/mysql/conf.d
       - ./mysql/migration:/etc/mysql/migration
+      - ./mysql/logs:/var/log/mysql  # この行を追加
     networks:
       - webapp-network
     healthcheck:
