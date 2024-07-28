@@ -18,3 +18,4 @@ CREATE INDEX idx_dispatchers_user_id ON dispatchers (user_id);
 CREATE INDEX idx_orders_area_id ON orders (node_id);
 CREATE INDEX idx_orders_status ON orders(status);
 CREATE INDEX idx_orders_order_time ON orders(order_time);
+CREATE INDEX idx_edges_node_a_id ON edges (node_a_id);
