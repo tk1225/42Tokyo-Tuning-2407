@@ -123,33 +123,39 @@ impl<T: AuthRepository + std::fmt::Debug> AuthService<T> {
                 }
 
                 let session_token = generate_session_token();
-                self.repository
-                    .create_session(user.id, &session_token)
-                    .await?;
+                let create_session_future = self.repository.create_session(user.id, &session_token);
 
-                match user.role.as_str() {
+                let response = match user.role.as_str() {
                     "dispatcher" => {
-                        match self.repository.find_dispatcher_by_user_id(user.id).await? {
-                            Some(dispatcher) => Ok(LoginResponseDto {
+                        if let Some(dispatcher) =
+                            self.repository.find_dispatcher_by_user_id(user.id).await?
+                        {
+                            LoginResponseDto {
                                 user_id: user.id,
                                 username: user.username,
-                                session_token,
+                                session_token: session_token.clone(),
                                 role: user.role.clone(),
                                 dispatcher_id: Some(dispatcher.id),
                                 area_id: Some(dispatcher.area_id),
-                            }),
-                            None => Err(AppError::InternalServerError),
+                            }
+                        } else {
+                            return Err(AppError::InternalServerError);
                         }
                     }
-                    _ => Ok(LoginResponseDto {
+                    _ => LoginResponseDto {
                         user_id: user.id,
                         username: user.username,
-                        session_token,
+                        session_token: session_token.clone(),
                         role: user.role.clone(),
                         dispatcher_id: None,
                         area_id: None,
-                    }),
-                }
+                    },
+                };
+
+                // セッションの作成を待つ
+                create_session_future.await?;
+
+                Ok(response)
             }
             None => Err(AppError::Unauthorized),
         }
