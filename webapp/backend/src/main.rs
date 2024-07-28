@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use actix_cors::Cors;
 use actix_web::{web, App, HttpServer};
+use std::time::Duration;
+use actix_web::http::KeepAlive;
 use api::{
     auth_handler, health_check_handler, map_handler, order_handler, result_handler,
     tow_truck_handler,
@@ -153,6 +155,7 @@ async fn main() -> std::io::Result<()> {
     })
     .bind(format!("0.0.0.0:{port}"))?
     .workers(4)
+    .keep_alive(KeepAlive::Timeout(Duration::from_secs(75)))
     .run()
     .await
 }
