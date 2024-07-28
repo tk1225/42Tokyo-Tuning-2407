@@ -208,22 +208,26 @@ impl<
         tow_truck_id: i32,
         order_time: DateTime<Utc>,
     ) -> Result<(), AppError> {
-        if (self
-            .order_repository
-            .create_completed_order(order_id, tow_truck_id, order_time)
-            .await)
-            .is_err()
-        {
-            return Err(AppError::BadRequest);
-        }
-
         self.order_repository
-            .update_order_dispatched(order_id, dispatcher_id, tow_truck_id)
-            .await?;
+            .create_completed_order(order_id, tow_truck_id, order_time)
+            .await
+            .map_err(|_| AppError::BadRequest)?;
 
-        self.tow_truck_repository
-            .update_status(tow_truck_id, "busy")
-            .await?;
+        let update_order_future =
+            self.order_repository
+                .update_order_dispatched(order_id, dispatcher_id, tow_truck_id);
+
+        let update_truck_status_future = self
+            .tow_truck_repository
+            .update_status(tow_truck_id, "busy");
+
+        // 並行実行
+        let (order_result, truck_status_result) =
+            tokio::join!(update_order_future, update_truck_status_future);
+
+        // エラーチェック
+        order_result?;
+        truck_status_result?;
 
         Ok(())
     }

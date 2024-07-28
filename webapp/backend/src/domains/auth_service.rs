@@ -69,45 +69,53 @@ impl<T: AuthRepository + std::fmt::Debug> AuthService<T> {
         self.repository
             .create_user(username, &hashed_password, role)
             .await?;
+        let user = self
+            .repository
+            .find_user_by_username(username)
+            .await?
+            .ok_or(AppError::InternalServerError)?;
 
         let session_token = generate_session_token();
+        let create_session_future = self.repository.create_session(user.id, &session_token);
 
-        match self.repository.find_user_by_username(username).await? {
-            Some(user) => {
-                self.repository
-                    .create_session(user.id, &session_token)
-                    .await?;
-                match user.role.as_str() {
-                    "dispatcher" => {
-                        self.repository
-                            .create_dispatcher(user.id, area.unwrap())
-                            .await?;
-                        let dispatcher = self
-                            .repository
-                            .find_dispatcher_by_user_id(user.id)
-                            .await?
-                            .unwrap();
-                        Ok(LoginResponseDto {
-                            user_id: user.id,
-                            username: user.username,
-                            session_token,
-                            role: user.role,
-                            dispatcher_id: Some(dispatcher.id),
-                            area_id: Some(dispatcher.area_id),
-                        })
-                    }
-                    _ => Ok(LoginResponseDto {
-                        user_id: user.id,
-                        username: user.username,
-                        session_token,
-                        role: user.role,
-                        dispatcher_id: None,
-                        area_id: None,
-                    }),
-                }
+        let response = if user.role.as_str() == "dispatcher" {
+            let create_dispatcher_future =
+                self.repository.create_dispatcher(user.id, area.unwrap());
+            let dispatcher_result = create_dispatcher_future.await;
+            if dispatcher_result.is_err() {
+                return Err(AppError::InternalServerError);
             }
-            None => Err(AppError::InternalServerError),
-        }
+
+            let dispatcher = self
+                .repository
+                .find_dispatcher_by_user_id(user.id)
+                .await?
+                .ok_or(AppError::InternalServerError)?;
+
+            create_session_future.await?;
+
+            LoginResponseDto {
+                user_id: user.id,
+                username: user.username,
+                session_token,
+                role: user.role,
+                dispatcher_id: Some(dispatcher.id),
+                area_id: Some(dispatcher.area_id),
+            }
+        } else {
+            create_session_future.await?;
+
+            LoginResponseDto {
+                user_id: user.id,
+                username: user.username,
+                session_token,
+                role: user.role,
+                dispatcher_id: None,
+                area_id: None,
+            }
+        };
+
+        Ok(response)
     }
 
     pub async fn login_user(
